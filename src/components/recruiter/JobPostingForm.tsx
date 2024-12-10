@@ -3,9 +3,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQueryClient } from "@tanstack/react-query";
+import { ID } from "appwrite";
 
 export const JobPostingForm = () => {
   const [title, setTitle] = useState("");
@@ -24,22 +25,21 @@ export const JobPostingForm = () => {
     setIsSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { error } = await supabase.from("job_postings").insert({
-        recruiter_id: user.id,
-        title,
-        description,
-        location,
-        requirements: requirements.split('\n').filter(r => r.trim()),
-        salary_range: {
-          min: parseInt(minSalary),
-          max: parseInt(maxSalary)
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.JOB_POSTINGS,
+        ID.unique(),
+        {
+          title,
+          description,
+          location,
+          requirements: requirements.split('\n').filter(r => r.trim()),
+          salary_range: {
+            min: parseInt(minSalary),
+            max: parseInt(maxSalary)
+          }
         }
-      });
-
-      if (error) throw error;
+      );
 
       toast({
         title: "Success",
@@ -54,7 +54,6 @@ export const JobPostingForm = () => {
       setMinSalary("");
       setMaxSalary("");
 
-      // Refresh job postings data
       queryClient.invalidateQueries({ queryKey: ['jobPostings'] });
 
     } catch (error: any) {

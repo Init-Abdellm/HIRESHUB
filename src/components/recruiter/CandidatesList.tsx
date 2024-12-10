@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mail, Calendar } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Query } from "appwrite";
 
 interface Candidate {
-  id: string;
+  $id: string;
   candidate_email: string;
   candidate_name: string;
   status: string;
@@ -20,23 +21,20 @@ export const CandidatesList = () => {
   const { data: candidates, isLoading } = useQuery({
     queryKey: ['candidates'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from('interview_invitations')
-        .select('id, candidate_email, candidate_name, status, job_title')
-        .eq('recruiter_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Candidate[];
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.INTERVIEW_INVITATIONS,
+        [
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      return response.documents as Candidate[];
     }
   });
 
   const handleScheduleInterview = async (candidateId: string) => {
     try {
-      // Implementation for scheduling interview
+      // Implementation for scheduling interview using Appwrite
       toast({
         title: "Success",
         description: "Interview scheduling email sent to candidate",
@@ -57,7 +55,7 @@ export const CandidatesList = () => {
   return (
     <div className="space-y-4">
       {candidates?.map((candidate) => (
-        <Card key={candidate.id}>
+        <Card key={candidate.$id}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl">{candidate.candidate_name}</CardTitle>
             <Badge variant={candidate.status === 'pending' ? 'secondary' : 'default'}>
@@ -76,7 +74,7 @@ export const CandidatesList = () => {
               </div>
               <div className="flex gap-2">
                 <Button 
-                  onClick={() => handleScheduleInterview(candidate.id)}
+                  onClick={() => handleScheduleInterview(candidate.$id)}
                   className="flex items-center gap-2"
                 >
                   <Calendar className="h-4 w-4" />

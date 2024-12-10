@@ -19,7 +19,7 @@ export const AISuggestions = ({ cvId, fieldName, content }: AISuggestionsProps) 
         'generate-cv-suggestions',
         JSON.stringify({ cvId, fieldName, content })
       );
-      return JSON.parse(execution.response).suggestions;
+      return JSON.parse(execution.responseBody).suggestions;
     },
     enabled: false
   });

@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { databases, storage, DATABASE_ID, STORAGE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, storage, DATABASE_ID, STORAGE_ID, COLLECTIONS, functions } from "@/integrations/appwrite/client";
 import { TextInterviewMode } from './modes/TextInterviewMode';
 import { VoiceInterviewMode } from './modes/VoiceInterviewMode';
 import { VideoInterviewMode } from './modes/VideoInterviewMode';
@@ -29,7 +28,6 @@ export const InterviewSession = ({ interviewId, onSessionComplete }: InterviewSe
       let mediaUrl = '';
 
       if (content instanceof Blob) {
-        // Upload file to Storage
         const file = new File(
           [content], 
           `interview-${Date.now()}.${sessionType === 'video' ? 'webm' : 'ogg'}`,
@@ -42,45 +40,34 @@ export const InterviewSession = ({ interviewId, onSessionComplete }: InterviewSe
           file
         );
 
-        if (!uploadResult) throw new Error('Failed to upload file');
-
-        // Get file view URL
-        const fileUrl = storage.getFileView(
+        mediaUrl = storage.getFileView(
           STORAGE_ID,
           uploadResult.$id
+        ).href;
+
+        const execution = await functions.createExecution(
+          'process-interview-media',
+          JSON.stringify({ 
+            type: sessionType,
+            mediaUrl,
+            interviewId 
+          })
         );
-        
-        mediaUrl = fileUrl.href;
 
-        // Process media with Edge Function
-        const formData = new FormData();
-        formData.append('type', sessionType);
-        formData.append('media', file);
-        formData.append('interviewId', interviewId);
-
-        const { data: analysis, error } = await supabase.functions
-          .invoke('process-interview-media', {
-            body: formData
-          });
-
-        if (error) throw error;
+        const analysis = JSON.parse(execution.responseBody);
         setFeedback(analysis);
-
         text = analysis.text;
       } else {
         text = content;
-        // For text responses, use the AI interview handler
-        const { data: analysis, error } = await supabase.functions
-          .invoke('ai-interview-handler', {
-            body: { text, interviewId }
-          });
-
-        if (error) throw error;
+        const execution = await functions.createExecution(
+          'ai-interview-handler',
+          JSON.stringify({ text, interviewId })
+        );
+        const analysis = JSON.parse(execution.responseBody);
         setFeedback(analysis);
       }
 
-      // Save session to database
-      const { error: sessionError } = await databases.createDocument(
+      await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.INTERVIEW_SESSIONS,
         ID.unique(),
@@ -94,8 +81,6 @@ export const InterviewSession = ({ interviewId, onSessionComplete }: InterviewSe
           model_name: 'gpt-4o-mini',
         }
       );
-
-      if (sessionError) throw sessionError;
 
       toast({
         title: "Success",

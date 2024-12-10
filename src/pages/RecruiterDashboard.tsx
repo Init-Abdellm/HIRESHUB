@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, account, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, BriefcaseBusiness, ChartBar } from "lucide-react";
@@ -9,6 +9,7 @@ import { JobPostingForm } from "@/components/recruiter/JobPostingForm";
 import { JobPostingsList } from "@/components/recruiter/JobPostingsList";
 import { CandidatesList } from "@/components/recruiter/CandidatesList";
 import { useQuery } from "@tanstack/react-query";
+import { Query } from "appwrite";
 
 export default function RecruiterDashboard() {
   const navigate = useNavigate();
@@ -16,25 +17,29 @@ export default function RecruiterDashboard() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const session = await account.get();
+        if (!session) {
+          navigate('/login');
+          return;
+        }
+
+        const profile = await databases.getDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          session.$id
+        );
+
+        if (profile.role !== 'recruiter') {
+          toast({
+            title: "Access Denied",
+            description: "This area is only accessible to recruiters.",
+            variant: "destructive",
+          });
+          navigate('/');
+        }
+      } catch (error) {
         navigate('/login');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.role !== 'recruiter') {
-        toast({
-          title: "Access Denied",
-          description: "This area is only accessible to recruiters.",
-          variant: "destructive",
-        });
-        navigate('/');
       }
     };
 
@@ -44,34 +49,30 @@ export default function RecruiterDashboard() {
   const { data: stats } = useQuery({
     queryKey: ['recruiterStats'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
       const [jobPostings, interviews, candidates] = await Promise.all([
-        supabase
-          .from('job_postings')
-          .select('id')
-          .eq('recruiter_id', user.id)
-          .eq('status', 'active'),
-        
-        supabase
-          .from('interviews')
-          .select('id')
-          .eq('status', 'scheduled'),
-        
-        supabase
-          .from('interview_invitations')
-          .select('id, status')
-          .eq('recruiter_id', user.id)
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.JOB_POSTINGS,
+          [Query.equal('status', 'active')]
+        ),
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.INTERVIEWS,
+          [Query.equal('status', 'scheduled')]
+        ),
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.INTERVIEW_INVITATIONS
+        )
       ]);
 
-      const totalCandidates = candidates.data?.length || 0;
-      const respondedCandidates = candidates.data?.filter(c => c.status !== 'pending').length || 0;
+      const totalCandidates = candidates.documents.length;
+      const respondedCandidates = candidates.documents.filter(c => c.status !== 'pending').length;
       const responseRate = totalCandidates ? (respondedCandidates / totalCandidates) * 100 : 0;
 
       return {
-        activeJobs: jobPostings.data?.length || 0,
-        scheduledInterviews: interviews.data?.length || 0,
+        activeJobs: jobPostings.documents.length,
+        scheduledInterviews: interviews.documents.length,
         totalCandidates,
         responseRate: responseRate.toFixed(1)
       };

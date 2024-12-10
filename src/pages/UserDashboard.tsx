@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { account } from "@/integrations/appwrite/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InterviewHistory } from "@/components/dashboard/InterviewHistory";
 import { CVLibrary } from "@/components/dashboard/CVLibrary";
@@ -14,8 +14,9 @@ const UserDashboard = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        await account.get();
+      } catch {
         navigate('/login');
       }
     };

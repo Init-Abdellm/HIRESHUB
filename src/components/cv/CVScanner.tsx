@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { functions } from "@/integrations/appwrite/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { CVScannerHeader } from "./CVScannerHeader";
 import { CVScannerProgress } from "./CVScannerProgress";
 import { CVScannerResults } from "./CVScannerResults";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { KeywordAnalysis } from "./KeywordAnalysis";  // Added import
-import { DetailedRecommendations } from "./DetailedRecommendations";  // Added import
+import { KeywordAnalysis } from "./KeywordAnalysis";
+import { DetailedRecommendations } from "./DetailedRecommendations";
 
 interface CVScannerProps {
   cvId: string;
@@ -30,16 +30,17 @@ export const CVScanner = ({ cvId }: CVScannerProps) => {
         setScanProgress(prev => Math.min(prev + 10, 90));
       }, 500);
       
-      const { data, error } = await supabase.functions.invoke('scan-cv', {
-        body: { cvId }
-      });
+      const execution = await functions.createExecution(
+        'scan-cv',
+        JSON.stringify({ cvId })
+      );
 
       clearInterval(progressInterval);
       setScanProgress(100);
 
-      if (error) throw error;
-
+      const data = JSON.parse(execution.responseBody);
       setScanResult(data);
+      
       toast({
         title: "CV Scan Complete",
         description: "Your CV has been analyzed for ATS optimization.",
@@ -56,45 +57,6 @@ export const CVScanner = ({ cvId }: CVScannerProps) => {
     }
   };
 
-  const prepareInterview = async () => {
-    try {
-      setIsPreparingInterview(true);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: interview, error: createError } = await supabase
-        .from('interviews')
-        .insert({
-          user_id: user.id,
-          cv_id: cvId,
-          scheduled_at: new Date().toISOString(),
-          preparation_complete: true,
-          preparation_notes: scanResult
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      toast({
-        title: "Interview Prepared",
-        description: "Your interview has been prepared based on your CV analysis.",
-      });
-
-      window.location.href = '/interviews';
-    } catch (error) {
-      console.error('Error preparing interview:', error);
-      toast({
-        title: "Error",
-        description: "Failed to prepare interview. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsPreparingInterview(false);
-    }
-  };
-  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

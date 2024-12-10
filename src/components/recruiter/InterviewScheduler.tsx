@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { ID } from "appwrite";
 
 interface InterviewSchedulerProps {
   candidateId: string;
@@ -38,30 +39,27 @@ export const InterviewScheduler = ({ candidateId, candidateEmail, onScheduled }:
     setIsSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Create the interview
       const scheduledAt = new Date(date);
       const [hours, minutes] = timeSlot.split(':');
       scheduledAt.setHours(parseInt(hours), parseInt(minutes));
 
-      const { error: interviewError } = await supabase
-        .from('interviews')
-        .insert({
-          user_id: user.id,
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.INTERVIEWS,
+        ID.unique(),
+        {
+          candidate_id: candidateId,
+          candidate_email: candidateEmail,
           scheduled_at: scheduledAt.toISOString(),
           status: 'scheduled'
-        });
-
-      if (interviewError) throw interviewError;
+        }
+      );
 
       toast({
         title: "Success",
         description: "Interview scheduled successfully",
       });
 
-      // Refresh the candidates list
       queryClient.invalidateQueries({ queryKey: ['candidates'] });
       onScheduled();
 
