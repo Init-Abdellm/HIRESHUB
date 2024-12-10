@@ -77,7 +77,7 @@ const itemVariants = {
 
 export const FeaturesSection = () => {
   return (
-    <section className="py-16 bg-gradient-to-b from-white to-slate-50">
+    <section className="py-16 bg-gradient-to-b from-primary/5 to-background">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -86,7 +86,7 @@ export const FeaturesSection = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+          <h2 className="text-3xl font-bold mb-4 text-foreground">
             Powerful CV Builder Features
           </h2>
           <p className="text-lg text-muted-foreground">
@@ -102,13 +102,13 @@ export const FeaturesSection = () => {
         >
           {features.map((feature, index) => (
             <motion.div key={index} variants={itemVariants}>
-              <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-primary/10">
+              <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-card border-border">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   className="flex flex-col items-center text-center"
                 >
-                  <div className="mb-4 p-3 rounded-full bg-primary/5">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <div className="mb-4 p-3 rounded-full bg-primary/10">{feature.icon}</div>
+                  <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </motion.div>
               </Card>

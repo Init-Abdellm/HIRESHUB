@@ -51,7 +51,7 @@ const itemVariants = {
 
 export const StatisticsSection = () => {
   return (
-    <section className="py-16 bg-gradient-to-b from-background to-muted/50">
+    <section className="py-16 bg-gradient-to-b from-background to-primary/5">
       <div className="container mx-auto px-4">
         <motion.div
           variants={containerVariants}
@@ -64,15 +64,15 @@ export const StatisticsSection = () => {
             <motion.div
               key={index}
               variants={itemVariants}
-              className="p-6 rounded-lg bg-card hover:bg-card/80 transition-colors duration-300"
+              className="p-6 rounded-lg bg-card shadow-lg hover:shadow-xl transition-all duration-300 border border-border"
             >
               <div className="flex items-center justify-center mb-4">
                 <div className="p-3 rounded-full bg-primary/10">
                   {stat.icon}
                 </div>
               </div>
-              <h3 className="text-3xl font-bold text-center mb-2">{stat.value}</h3>
-              <p className="text-lg font-semibold text-center mb-1">{stat.title}</p>
+              <h3 className="text-3xl font-bold text-center mb-2 text-foreground">{stat.value}</h3>
+              <p className="text-lg font-semibold text-center mb-1 text-foreground">{stat.title}</p>
               <p className="text-sm text-muted-foreground text-center">
                 {stat.description}
               </p>

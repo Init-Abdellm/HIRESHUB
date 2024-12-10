@@ -36,7 +36,7 @@ export const EnterpriseSection = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl font-bold mb-4">
+          <h2 className="text-4xl font-bold mb-4 text-foreground">
             Enterprise Solutions
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -52,12 +52,12 @@ export const EnterpriseSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
-              className="p-6 rounded-xl bg-card border border-primary/10 hover:border-primary/20 transition-all duration-300"
+              className="p-6 rounded-xl bg-card shadow-lg hover:shadow-xl transition-all duration-300 border border-border"
             >
               <div className="p-3 rounded-full bg-primary/10 w-fit mb-4">
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+              <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
               <p className="text-muted-foreground">{feature.description}</p>
             </motion.div>
           ))}
@@ -70,7 +70,7 @@ export const EnterpriseSection = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="text-center"
         >
-          <Button size="lg" variant="default">
+          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             Contact Sales
           </Button>
         </motion.div>
