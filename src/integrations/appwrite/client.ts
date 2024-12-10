@@ -19,4 +19,6 @@ export const COLLECTIONS = {
     INTERVIEW_SESSIONS: 'interview_sessions',
     CVS: 'cvs',
     NOTIFICATIONS: 'notifications',
+    JOB_POSTINGS: 'job_postings',
+    INTERVIEW_INVITATIONS: 'interview_invitations'
 };

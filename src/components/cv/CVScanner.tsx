@@ -38,7 +38,7 @@ export const CVScanner = ({ cvId }: CVScannerProps) => {
       clearInterval(progressInterval);
       setScanProgress(100);
 
-      const data = JSON.parse(execution.responseBody);
+      const data = JSON.parse(execution.response);
       setScanResult(data);
       
       toast({
@@ -54,6 +54,29 @@ export const CVScanner = ({ cvId }: CVScannerProps) => {
       });
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const prepareInterview = async () => {
+    try {
+      setIsPreparingInterview(true);
+      await functions.createExecution(
+        'prepare-interview',
+        JSON.stringify({ cvId })
+      );
+      toast({
+        title: "Interview Prepared",
+        description: "Your interview questions have been generated based on your CV.",
+      });
+    } catch (error) {
+      console.error('Error preparing interview:', error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare interview. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreparingInterview(false);
     }
   };
 

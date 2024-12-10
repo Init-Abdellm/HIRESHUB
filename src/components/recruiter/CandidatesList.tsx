@@ -28,13 +28,18 @@ export const CandidatesList = () => {
           Query.orderDesc('$createdAt')
         ]
       );
-      return response.documents as Candidate[];
+      return response.documents.map(doc => ({
+        $id: doc.$id,
+        candidate_email: doc.candidate_email,
+        candidate_name: doc.candidate_name,
+        status: doc.status,
+        job_title: doc.job_title
+      })) as Candidate[];
     }
   });
 
   const handleScheduleInterview = async (candidateId: string) => {
     try {
-      // Implementation for scheduling interview using Appwrite
       toast({
         title: "Success",
         description: "Interview scheduling email sent to candidate",

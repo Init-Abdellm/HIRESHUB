@@ -30,7 +30,15 @@ export const JobPostingsList = () => {
           Query.orderDesc('$createdAt')
         ]
       );
-      return response.documents as JobPosting[];
+      return response.documents.map(doc => ({
+        $id: doc.$id,
+        title: doc.title,
+        description: doc.description,
+        location: doc.location,
+        requirements: doc.requirements,
+        salary_range: doc.salary_range,
+        $createdAt: doc.$createdAt
+      })) as JobPosting[];
     }
   });
 
@@ -84,8 +92,8 @@ export const JobPostingsList = () => {
               <div className="flex gap-2">
                 <Badge>{posting.location}</Badge>
                 <Badge variant="outline">
-                  ${(posting.salary_range as { min: number; max: number }).min} - 
-                  ${(posting.salary_range as { min: number; max: number }).max}
+                  ${posting.salary_range.min} - 
+                  ${posting.salary_range.max}
                 </Badge>
               </div>
               <div className="mt-4">
