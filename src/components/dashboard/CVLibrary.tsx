@@ -1,32 +1,32 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
+import { Query } from "appwrite";
+import { useQuery } from "@tanstack/react-query";
 
 export const CVLibrary = () => {
-  const [cvs, setCvs] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchCVs = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { data: cvs, isLoading } = useQuery({
+    queryKey: ['cvs'],
+    queryFn: async () => {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.CVS,
+        [
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      return response.documents;
+    }
+  });
 
-      const { data } = await supabase
-        .from('cvs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        setCvs(data);
-      }
-    };
-
-    fetchCVs();
-  }, []);
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div>
@@ -38,24 +38,24 @@ export const CVLibrary = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cvs.map((cv) => (
-          <Card key={cv.id} className="p-4">
+        {cvs?.map((cv) => (
+          <Card key={cv.$id} className="p-4">
             <h3 className="font-semibold mb-2">{cv.title}</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Last updated: {format(new Date(cv.updated_at), 'PP')}
+              Last updated: {format(new Date(cv.$updatedAt), 'PP')}
             </p>
             <div className="flex space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/cv-builder/${cv.id}`)}
+                onClick={() => navigate(`/cv-builder/${cv.$id}`)}
               >
                 Edit
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/interviews/new?cv=${cv.id}`)}
+                onClick={() => navigate(`/interviews/new?cv=${cv.$id}`)}
               >
                 Start Interview
               </Button>

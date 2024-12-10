@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import {
   Table,
   TableBody,
@@ -11,40 +11,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { Query } from "appwrite";
+import { useQuery } from "@tanstack/react-query";
 
 export const InterviewHistory = () => {
-  const [interviews, setInterviews] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchInterviews = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('interviews')
-        .select(`
-          *,
-          interview_sessions (
-            session_type,
-            sentiment_scores,
-            transcription
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        setInterviews(data);
-      }
-    };
-
-    fetchInterviews();
-  }, []);
+  const { data: interviews, isLoading } = useQuery({
+    queryKey: ['interviews'],
+    queryFn: async () => {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.INTERVIEWS,
+        [
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      return response.documents;
+    }
+  });
 
   const viewDetails = (interviewId: string) => {
     navigate(`/interviews/${interviewId}`);
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div>
@@ -66,10 +59,10 @@ export const InterviewHistory = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {interviews.map((interview) => (
-            <TableRow key={interview.id}>
+          {interviews?.map((interview) => (
+            <TableRow key={interview.$id}>
               <TableCell>
-                {format(new Date(interview.created_at), 'PPp')}
+                {format(new Date(interview.$createdAt), 'PPp')}
               </TableCell>
               <TableCell className="capitalize">{interview.interview_type}</TableCell>
               <TableCell>{interview.completion_status}%</TableCell>
@@ -78,7 +71,7 @@ export const InterviewHistory = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => viewDetails(interview.id)}
+                  onClick={() => viewDetails(interview.$id)}
                 >
                   View Details
                 </Button>

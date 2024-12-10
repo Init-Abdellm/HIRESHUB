@@ -9,75 +9,69 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS, account } from "@/integrations/appwrite/client";
 import { useNavigate } from "react-router-dom";
 import { InterviewSession } from "@/components/interview/InterviewSession";
 import { Interview, InterviewType } from "@/types/interview";
+import { ID } from "appwrite";
+import { useQuery } from "@tanstack/react-query";
 
 const Interviews = () => {
   const [selectedCV, setSelectedCV] = useState<string | null>(null);
   const [interviewer, setInterviewer] = useState<InterviewType>("technical");
   const [currentInterviewId, setCurrentInterviewId] = useState<string | null>(null);
-  const [cvOptions, setCVOptions] = useState<Array<{ id: string; title: string }>>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        await account.get();
+      } catch {
         navigate("/login");
       }
     };
     checkAuth();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchCVs = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { data: cvOptions } = useQuery({
+    queryKey: ['cv-options'],
+    queryFn: async () => {
+      const session = await account.get();
+      if (!session) throw new Error('Not authenticated');
 
-      const { data: cvs, error } = await supabase
-        .from('cvs')
-        .select('id, title')
-        .eq('user_id', user.id);
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.CVS,
+        []
+      );
 
-      if (error) {
-        console.error('Error fetching CVs:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your CVs",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setCVOptions(cvs || []);
-    };
-
-    fetchCVs();
-  }, [toast]);
+      return response.documents.map(cv => ({
+        id: cv.$id,
+        title: cv.title
+      }));
+    }
+  });
 
   const createNewInterview = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const session = await account.get();
+      if (!session) throw new Error('Not authenticated');
 
-      const { data: interview, error } = await supabase
-        .from('interviews')
-        .insert({
-          user_id: user.id,
+      const response = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.INTERVIEWS,
+        ID.unique(),
+        {
+          user_id: session.$id,
           cv_id: selectedCV,
           interview_type: interviewer,
           scheduled_at: new Date().toISOString(),
           status: 'in_progress'
-        })
-        .select()
-        .single();
+        }
+      );
 
-      if (error) throw error;
-
-      setCurrentInterviewId(interview.id);
+      setCurrentInterviewId(response.$id);
       toast({
         title: "Interview Started",
         description: "Your interview session has been created.",
@@ -112,7 +106,7 @@ const Interviews = () => {
                 <SelectValue placeholder="Select your CV" />
               </SelectTrigger>
               <SelectContent>
-                {cvOptions.map((cv) => (
+                {cvOptions?.map((cv) => (
                   <SelectItem key={cv.id} value={cv.id}>
                     {cv.title}
                   </SelectItem>

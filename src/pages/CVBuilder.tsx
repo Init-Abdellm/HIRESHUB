@@ -5,10 +5,11 @@ import { CVForm } from "@/components/cv/CVForm";
 import { CVPreview } from "@/components/cv/CVPreview";
 import { CVScanner } from "@/components/cv/CVScanner";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS, account } from "@/integrations/appwrite/client";
 import { Loader2 } from "lucide-react";
 import { ProfileDataFetcher } from "@/components/auth/ProfileDataFetcher";
 import { useNavigate } from "react-router-dom";
+import { Query } from "appwrite";
 
 const CVBuilder = () => {
   const [activeCV, setActiveCV] = useState<any>(null);
@@ -17,8 +18,9 @@ const CVBuilder = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        await account.get();
+      } catch (error) {
         navigate('/login');
       }
     };
@@ -28,16 +30,18 @@ const CVBuilder = () => {
   const { data: cvs, isLoading } = useQuery({
     queryKey: ['cvs'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const session = await account.get();
+      if (!session) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('cvs')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      return data;
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.CVS,
+        [
+          Query.equal('user_id', session.$id),
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      return response.documents;
     }
   });
 
@@ -77,7 +81,7 @@ const CVBuilder = () => {
         </div>
         <div className="lg:sticky lg:top-8 space-y-8">
           <CVPreview cv={activeCV} />
-          {activeCV && <CVScanner cvId={activeCV.id} />}
+          {activeCV && <CVScanner cvId={activeCV.$id} />}
         </div>
       </div>
     </div>
