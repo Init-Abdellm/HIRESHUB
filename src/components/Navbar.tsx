@@ -5,7 +5,7 @@ import { useState } from "react";
 import { UserMenu } from "./user/UserMenu";
 import { NotificationBell } from "./user/NotificationBell";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { account } from "@/integrations/appwrite/client";
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,8 +13,12 @@ export const Navbar = () => {
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
+      try {
+        const session = await account.get();
+        return session;
+      } catch (error) {
+        return null;
+      }
     },
   });
 
@@ -92,7 +96,7 @@ export const Navbar = () => {
                     variant="destructive" 
                     className="w-full justify-start"
                     onClick={async () => {
-                      await supabase.auth.signOut();
+                      await account.deleteSession('current');
                       window.location.href = "/login";
                     }}
                   >

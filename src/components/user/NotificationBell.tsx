@@ -7,29 +7,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Badge } from "@/components/ui/badge";
+import { Query } from "appwrite";
 
 export const NotificationBell = () => {
   const { data: notifications } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('read', false)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.NOTIFICATIONS,
+        [
+          Query.equal('read', false),
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      return response.documents;
     }
   });
 
   const markAsRead = async (id: string) => {
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', id);
+    await databases.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.NOTIFICATIONS,
+      id,
+      { read: true }
+    );
   };
 
   return (

@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Building2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ID } from "appwrite";
 
 export const RoleSelector = () => {
   const { toast } = useToast();
@@ -11,22 +12,14 @@ export const RoleSelector = () => {
 
   const handleRoleSelect = async (role: 'candidate' | 'recruiter') => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to select a role",
-          variant: "destructive",
-        });
-        return;
-      }
+      const document = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        ID.unique(),
+        { role }
+      );
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      if (!document) throw new Error("Failed to set role");
 
       toast({
         title: "Success",

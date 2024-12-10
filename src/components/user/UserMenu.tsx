@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { account, databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { useToast } from "@/components/ui/use-toast";
 import {
   DropdownMenu,
@@ -22,31 +22,35 @@ export const UserMenu = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const user = await account.get();
+        if (!user) return;
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+        const profileData = await databases.getDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          user.$id
+        );
 
-      if (data) setProfile(data);
+        if (profileData) setProfile(profileData as unknown as Profile);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
     };
 
     fetchProfile();
   }, []);
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      await account.deleteSession('current');
+      navigate("/login");
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error signing out",
         description: error.message,
       });
-    } else {
-      navigate("/login");
     }
   };
 

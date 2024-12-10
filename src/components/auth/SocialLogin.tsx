@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Github, Linkedin, Mail } from "lucide-react";
+import { account } from "@/integrations/appwrite/client";
 
 interface SocialLoginProps {
   onSocialLogin: (provider: 'github' | 'linkedin' | 'google') => Promise<void>;
