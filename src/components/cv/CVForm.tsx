@@ -9,7 +9,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { PersonalInfoFields } from "./form/PersonalInfoFields";
@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { ID } from "appwrite";
 
 const formSchema = z.object({
   title: z.string().min(1, "CV title is required"),
@@ -75,8 +76,8 @@ export const CVForm = ({ activeCV, onSave }: CVFormProps) => {
   const onSubmit = async (values: any) => {
     try {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const session = await account.get();
+      if (!session) {
         toast({
           title: "Authentication Error",
           description: "Please log in to save your CV",
@@ -87,7 +88,7 @@ export const CVForm = ({ activeCV, onSave }: CVFormProps) => {
 
       const cvData = {
         title: values.title,
-        user_id: user.id,
+        user_id: session.$id,
         template: values.template,
         sections_order: sectionOrder.map(s => s.id),
         content: {
@@ -103,28 +104,23 @@ export const CVForm = ({ activeCV, onSave }: CVFormProps) => {
 
       let response;
       if (activeCV) {
-        const { data, error } = await supabase
-          .from('cvs')
-          .update(cvData)
-          .eq('id', activeCV.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        response = data;
+        response = await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.CVS,
+          activeCV.id,
+          cvData
+        );
         toast({
           title: "CV Updated",
           description: "Your CV has been successfully updated.",
         });
       } else {
-        const { data, error } = await supabase
-          .from('cvs')
-          .insert(cvData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        response = data;
+        response = await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.CVS,
+          ID.unique(),
+          cvData
+        );
         toast({
           title: "CV Created",
           description: "Your CV has been successfully created.",

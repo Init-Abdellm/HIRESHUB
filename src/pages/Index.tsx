@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { account, databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
 import { Profile } from "@/types/database";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
@@ -20,16 +20,15 @@ const Index = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+        const session = await account.get();
+        if (session) {
+          const profileData = await databases.getDocument(
+            DATABASE_ID,
+            COLLECTIONS.PROFILES,
+            session.$id
+          );
 
-          if (error) throw error;
-          setProfile(profile);
+          if (profileData) setProfile(profileData as unknown as Profile);
         }
       } catch (error: any) {
         console.error('Error:', error);

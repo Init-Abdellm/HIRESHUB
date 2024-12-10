@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Lightbulb, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { functions } from "@/integrations/appwrite/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AISuggestionsProps {
@@ -15,10 +15,11 @@ export const AISuggestions = ({ cvId, fieldName, content }: AISuggestionsProps) 
   const { data: suggestions, isLoading, refetch } = useQuery({
     queryKey: ['cv-suggestions', cvId, fieldName],
     queryFn: async () => {
-      const { data } = await supabase.functions.invoke('generate-cv-suggestions', {
-        body: { cvId, fieldName, content }
-      });
-      return data.suggestions;
+      const execution = await functions.createExecution(
+        'generate-cv-suggestions',
+        JSON.stringify({ cvId, fieldName, content })
+      );
+      return JSON.parse(execution.response).suggestions;
     },
     enabled: false
   });
