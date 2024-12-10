@@ -32,11 +32,14 @@ const Index = () => {
         }
       } catch (error: any) {
         console.error('Error:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile data",
-          variant: "destructive",
-        });
+        // Don't show error toast for unauthenticated users
+        if (error.code !== 401) {
+          toast({
+            title: "Error",
+            description: "Failed to load profile data",
+            variant: "destructive",
+          });
+        }
       } finally {
         setLoading(false);
       }

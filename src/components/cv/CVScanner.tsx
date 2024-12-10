@@ -38,7 +38,15 @@ export const CVScanner = ({ cvId }: CVScannerProps) => {
       clearInterval(progressInterval);
       setScanProgress(100);
 
-      const data = JSON.parse(execution.response);
+      // Parse the execution output safely
+      let data;
+      try {
+        data = JSON.parse(execution.responseBody || '{}');
+      } catch (e) {
+        console.error('Error parsing scan results:', e);
+        data = {};
+      }
+      
       setScanResult(data);
       
       toast({

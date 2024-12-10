@@ -9,7 +9,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { databases, DATABASE_ID, COLLECTIONS } from "@/integrations/appwrite/client";
+import { databases, DATABASE_ID, COLLECTIONS, account } from "@/integrations/appwrite/client";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { PersonalInfoFields } from "./form/PersonalInfoFields";
