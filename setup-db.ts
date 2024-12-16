@@ -1,6 +1,6 @@
 import { Client, Databases, ID } from 'node-appwrite';
 
-// Initialize the Appwrite client
+// Hna data base
 const client = new Client()
     .setEndpoint('https://cloud.appwrite.io/v1')
     .setProject(process.env.APPWRITE_PROJECT_ID || '')
@@ -10,10 +10,10 @@ const databases = new Databases(client);
 
 async function setupDatabase() {
     try {
-        // Create database
+        // Hadi katcree database
         const database = await databases.create(ID.unique(), 'Main Database');
 
-        // Create Collections
+        // Hadi katcree Collections
         const collections = {
             profiles: {
                 name: 'Profiles',
@@ -69,7 +69,7 @@ async function setupDatabase() {
                 value.name
             );
 
-            // Create attributes for each collection
+            // Create attributes
             for (const attr of value.attributes) {
                 await databases.createStringAttribute(
                     database.$id,
